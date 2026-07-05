@@ -1,0 +1,263 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 248 250 252;
+  --foreground: 15 23 42;
+}
+
+.dark {
+  --background: 8 13 30;
+  --foreground: 226 232 240;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-feature-settings: "ss01", "cv01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Use the Persian font for both body and display when in RTL mode. */
+html[dir="rtl"] {
+  --font-sans: var(--font-fa);
+  --font-display: var(--font-fa);
+}
+
+/* ── Reusable component classes ─────────────────────────────── */
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .glass {
+    @apply border border-white/40 bg-white/60 backdrop-blur-xl;
+  }
+
+  .dark .glass {
+    @apply border-white/10 bg-white/[0.04];
+  }
+
+  .glass-strong {
+    @apply border border-white/50 bg-white/80 backdrop-blur-2xl;
+  }
+
+  .dark .glass-strong {
+    @apply border-white/10 bg-slate-900/70;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-500 via-sky-500 to-cyan-400 bg-clip-text text-transparent;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-glow hover:shadow-[0_0_50px_-8px_rgba(53,121,246,0.7)] hover:-translate-y-0.5;
+  }
+
+  .btn-ghost {
+    @apply btn border border-slate-200 bg-white/70 text-slate-700 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300;
+  }
+
+  .card {
+    @apply rounded-3xl border border-slate-200/70 bg-white/70 p-6 shadow-soft backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-slate-900/50;
+  }
+}
+
+/* ── Decorative scrollbar ───────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.65);
+  background-clip: content-box;
+}
+
+/* ── Animated weather backgrounds ───────────────────────────── */
+.weather-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Drifting clouds */
+.cloud {
+  position: absolute;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.25));
+  filter: blur(6px);
+  opacity: 0.65;
+}
+.dark .cloud {
+  background: radial-gradient(circle at 30% 30%, rgba(148, 163, 184, 0.55), rgba(30, 41, 59, 0.15));
+}
+.cloud::before,
+.cloud::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: inherit;
+}
+.cloud.c1 { width: 180px; height: 60px; top: 18%; left: -200px; animation: drift 38s linear infinite; }
+.cloud.c2 { width: 240px; height: 80px; top: 38%; left: -300px; animation: drift 52s linear infinite; animation-delay: -10s; opacity: 0.45; }
+.cloud.c3 { width: 130px; height: 44px; top: 60%; left: -180px; animation: drift 44s linear infinite; animation-delay: -24s; opacity: 0.5; }
+
+@keyframes drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100vw + 360px)); }
+}
+
+/* Sun rays */
+.sun-core {
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 214, 120, 0.9), rgba(255, 170, 60, 0.05) 70%, transparent);
+  filter: blur(2px);
+}
+
+/* Rain */
+.rain {
+  position: absolute;
+  top: -15%;
+  width: 1.5px;
+  height: 70px;
+  background: linear-gradient(to bottom, transparent, rgba(186, 230, 253, 0.85));
+  animation: rainfall linear infinite;
+}
+@keyframes rainfall {
+  0% { transform: translateY(-120px) rotate(8deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(105vh) rotate(8deg); opacity: 0.2; }
+}
+
+/* Snow */
+.snow {
+  position: absolute;
+  top: -10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  animation: snowfall linear infinite;
+}
+@keyframes snowfall {
+  0% { transform: translateY(-20px) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(105vh) translateX(40px); opacity: 0.6; }
+}
+
+/* Stars for night */
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 999px;
+  background: white;
+  animation: twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* Shimmer for skeletons */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.18);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: shimmer 1.6s infinite;
+}
+.dark .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud, .rain, .snow, .star { animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+/* Aurora blob used on hero/CTA */
+.aurora {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.55;
+  z-index: 0;
+}
+
+/* Lightning flash for storms */
+.lightning {
+  background: radial-gradient(circle at 70% 20%, rgba(167, 139, 250, 0.55), transparent 45%);
+  animation: lightning 6s infinite;
+}
+@keyframes lightning {
+  0%, 92%, 100% { opacity: 0; }
+  93% { opacity: 0.9; }
+  95% { opacity: 0.1; }
+  97% { opacity: 0.7; }
+}
+
+/* ── Theme-aware image treatment ──────────────────────────────
+   Photos are gently tuned to match the active theme: a clean,
+   slightly vivid look in light mode and a moody, cool brand-tinted
+   look in dark mode. Apply `.img-tinted` to any <img>; add an
+   `.img-tint` overlay div (placed right after the image, before any
+   caption) to layer a soft brand colour wash. */
+.img-tinted {
+  filter: saturate(1.04) contrast(1.02);
+  transition: filter 0.5s ease;
+}
+.dark .img-tinted {
+  filter: brightness(0.82) saturate(1.18) contrast(1.06);
+}
+
+.img-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(14, 165, 233, 0.05));
+  mix-blend-mode: soft-light;
+  transition: background 0.5s ease;
+  z-index: 1;
+}
+.dark .img-tint {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.3), rgba(2, 132, 199, 0.28));
+}
