@@ -126,7 +126,14 @@ function aqiLabel(aqi: number | null) {
 }
 
 async function getJson(url: string) {
-  const res = await fetch(url, { next: { revalidate: 600 } });
+  // `cache: "no-store"` is intentional: the whole point of the animated
+  // background (day/night, rain/snow/clear) is that it visibly reflects the
+  // *actual* current condition. Caching this — even for a few minutes —
+  // risks showing stale weather (e.g. snow animating on a warm, clear
+  // night) if the CDN serves an older response via stale-while-revalidate.
+  // Open-Meteo's current-conditions endpoint is free and not rate-limited
+  // tightly enough to justify that tradeoff for a personal-scale demo.
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Upstream request failed: ${res.status}`);
   return res.json();
 }

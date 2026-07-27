@@ -52,8 +52,11 @@ export async function GET(req: NextRequest) {
     }
 
     const weather = await getWeather(place);
+    // No shared caching here either — see the comment on getJson() in
+    // lib/weather.ts. The animated background is only meaningful if it
+    // reflects what the sky actually looks like right now.
     return NextResponse.json(weather, {
-      headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1800" },
+      headers: { "Cache-Control": "no-store" },
     });
   } catch (err: any) {
     return NextResponse.json(
