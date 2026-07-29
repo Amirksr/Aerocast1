@@ -7,15 +7,6 @@ import { WeatherIcon } from "../weather-icon";
 import { Reveal } from "../motion-primitives";
 import { useT } from "../language-provider";
 
-const floatVariants = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: 0.2 + i * 0.12, duration: 0.6, ease: "easeOut" },
-  }),
-};
-
 export function Hero() {
   const t = useT();
 
@@ -127,84 +118,35 @@ export function Hero() {
             </div>
           </motion.div>
 
-          {/* main card */}
+          {/* Climate-zones poster — purely illustrative, no fake live numbers */}
           <motion.div
             initial={{ opacity: 0, y: 40, rotate: -3 }}
             animate={{ opacity: 1, y: 0, rotate: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="glass-strong absolute inset-0 z-10 rounded-[2rem] p-7 shadow-card"
+            className="glass-strong absolute inset-0 z-10 flex flex-col justify-between rounded-[2rem] p-7 shadow-card"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-400">{t("hero.previewCity")}</p>
-                <p className="font-display text-xl font-bold">{t("hero.previewDay")}</p>
-              </div>
-              <WeatherIcon theme="clear" size={64} />
+            <div>
+              <p className="font-display text-xl font-bold">{t("hero.posterTitle")}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                {t("hero.posterSubtitle")}
+              </p>
             </div>
-            <div className="mt-4 flex items-end gap-1">
-              <span className="font-display text-7xl font-bold leading-none">28°</span>
-              <span className="mb-2 text-slate-400">{t("hero.previewFeels")}</span>
-            </div>
-            <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{t("hero.previewHumidity")}</div>
 
-            <div className="mt-6 grid grid-cols-3 gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-3">
               {[
-                { l: "Wind", v: "12 km/h" },
-                { l: "UV", v: "High" },
-                { l: "Rain", v: "0 mm" },
-              ].map((m) => (
-                <div key={m.l} className="rounded-2xl bg-white/60 p-3 text-center dark:bg-white/5">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400">{m.l}</p>
-                  <p className="mt-1 text-sm font-semibold">{m.v}</p>
+                { zone: t("hero.zoneDesert"), theme: "clear" as const },
+                { zone: t("hero.zoneTropical"), theme: "rain" as const },
+                { zone: t("hero.zoneTemperate"), theme: "partly" as const },
+                { zone: t("hero.zoneArctic"), theme: "snow" as const },
+              ].map((z) => (
+                <div
+                  key={z.zone}
+                  className="flex flex-col items-center gap-2 rounded-2xl bg-white/60 p-4 text-center dark:bg-white/5"
+                >
+                  <WeatherIcon theme={z.theme} size={40} animated={false} />
+                  <span className="text-sm font-semibold">{z.zone}</span>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-5 space-y-2">
-              {[
-                { d: "Mon", t: "Sunny", temp: "31°", theme: "clear" as const },
-                { d: "Tue", t: "Partly", temp: "27°", theme: "partly" as const },
-                { d: "Wed", t: "Rain", temp: "22°", theme: "rain" as const },
-              ].map((r) => (
-                <div key={r.d} className="flex items-center justify-between rounded-xl bg-white/50 px-3 py-2 dark:bg-white/5">
-                  <span className="text-sm font-medium">{r.d}</span>
-                  <WeatherIcon theme={r.theme} size={22} animated={false} />
-                  <span className="text-sm font-semibold">{r.temp}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* floating chips */}
-          <motion.div
-            custom={1}
-            variants={floatVariants}
-            initial="hidden"
-            animate="show"
-            className="absolute -left-6 top-10 rounded-2xl glass-strong px-4 py-3 shadow-card"
-          >
-              <div className="flex items-center gap-2">
-                <span className="text-amber-400">⚠</span>
-                <div>
-                  <p className="text-xs font-semibold">{t("hero.alertTitle")}</p>
-                  <p className="text-[11px] text-slate-400">{t("hero.alertSub")}</p>
-                </div>
-              </div>
-          </motion.div>
-
-          <motion.div
-            custom={2}
-            variants={floatVariants}
-            initial="hidden"
-            animate="show"
-            className="absolute -right-5 bottom-12 rounded-2xl glass-strong px-4 py-3 shadow-card"
-          >
-            <div className="flex items-center gap-2">
-              <span className="h-8 w-8 rounded-full bg-emerald-400/20 grid place-items-center text-emerald-500">AQI</span>
-              <div>
-                <p className="text-xs font-semibold">{t("hero.aqiTitle")}</p>
-                <p className="text-[11px] text-slate-400">{t("hero.aqiSub")}</p>
-              </div>
             </div>
           </motion.div>
         </div>

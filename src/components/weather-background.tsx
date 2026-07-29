@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import type { WeatherTheme } from "@/lib/weather";
 
 interface WeatherBackgroundProps {
   theme: WeatherTheme;
@@ -9,7 +10,9 @@ interface WeatherBackgroundProps {
   intensity?: number;
 }
 
-// Theme palettes (day / night) — used for the gradient wash behind content.
+// Theme palettes (day / night) — this gradient wash is the only thing that
+// conveys day vs. night and general "mood" of the sky. It's a static tint,
+// not an animation, so it can never look inconsistent with reality.
 const PALETTES: Record<
   WeatherTheme,
   { day: [string, string, string]; night: [string, string, string] }
@@ -24,19 +27,18 @@ const PALETTES: Record<
   thunder: { day: ["#1e293b", "#334155", "#4c1d95"], night: ["#020617", "#0c0a1f", "#1e1b4b"] },
 };
 
-function useParticles(theme: WeatherTheme, isDay: boolean) {
+// Only these themes get a moving-particle animation. Everything else
+// (clear, partly, cloudy, fog) is represented solely by the static gradient
+// above — no decorative stars/sun-pulse/clouds that could look disconnected
+// from the actual condition.
+const RAIN_THEMES: WeatherTheme[] = ["rain", "drizzle", "thunder"];
+
+function useParticles(theme: WeatherTheme) {
   return useMemo(() => {
     const rand = (min: number, max: number) => Math.random() * (max - min) + min;
-    const count =
-      theme === "rain" || theme === "thunder"
-        ? 60
-        : theme === "snow"
-        ? 40
-        : theme === "cloudy" || theme === "fog"
-        ? 3
-        : 0;
 
-    const rain = Array.from({ length: count }).map((_, i) => ({
+    const rainCount = RAIN_THEMES.includes(theme) ? 60 : 0;
+    const rain = Array.from({ length: rainCount }).map((_, i) => ({
       id: i,
       left: rand(0, 100),
       dur: rand(0.5, 1.1),
@@ -44,7 +46,8 @@ function useParticles(theme: WeatherTheme, isDay: boolean) {
       height: rand(50, 90),
     }));
 
-    const snow = Array.from({ length: 40 }).map((_, i) => ({
+    const snowCount = theme === "snow" ? 40 : 0;
+    const snow = Array.from({ length: snowCount }).map((_, i) => ({
       id: i,
       left: rand(0, 100),
       dur: rand(6, 12),
@@ -52,21 +55,8 @@ function useParticles(theme: WeatherTheme, isDay: boolean) {
       size: rand(3, 7),
     }));
 
-    const clouds = [1, 2, 3];
-
-    const stars =
-      !isDay && (theme === "clear" || theme === "partly")
-        ? Array.from({ length: 36 }).map((_, i) => ({
-            id: i,
-            left: rand(0, 100),
-            top: rand(0, 70),
-            dur: rand(2, 5),
-            delay: rand(0, 3),
-          }))
-        : [];
-
-    return { rain, snow, clouds, stars };
-  }, [theme, isDay]);
+    return { rain, snow };
+  }, [theme]);
 }
 
 export function WeatherBackground({
@@ -75,11 +65,11 @@ export function WeatherBackground({
   intensity = 1,
 }: WeatherBackgroundProps) {
   const palette = PALETTES[theme][isDay ? "day" : "night"];
-  const { rain, snow, clouds, stars } = useParticles(theme, isDay);
+  const { rain, snow } = useParticles(theme);
 
   return (
     <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
-      {/* Base gradient wash */}
+      {/* Base gradient wash — the only day/night + mood signal, and it's static. */}
       <div
         className="absolute inset-0 transition-all duration-1000"
         style={{
@@ -89,31 +79,7 @@ export function WeatherBackground({
       />
 
       <div className="weather-canvas">
-        {/* Stars at night */}
-        {stars.map((s) => (
-          <span
-            key={`star-${s.id}`}
-            className="star"
-            style={{
-              left: `${s.left}%`,
-              top: `${s.top}%`,
-              animationDuration: `${s.dur}s`,
-              animationDelay: `${s.delay}s`,
-            }}
-          />
-        ))}
-
-        {/* Sun during day for clear/partly */}
-        {(theme === "clear" || theme === "partly") && isDay && (
-          <div className="sun-core animate-pulse" />
-        )}
-
-        {/* Clouds */}
-        {clouds.map((c) => (
-          <span key={`cloud-${c}`} className={`cloud c${c}`} />
-        ))}
-
-        {/* Rain */}
+        {/* Rain (also used for drizzle and thunderstorms) */}
         {rain.map((r) => (
           <span
             key={`rain-${r.id}`}
@@ -142,10 +108,8 @@ export function WeatherBackground({
           />
         ))}
 
-        {/* Lightning flash for storms */}
-        {theme === "thunder" && (
-          <span className="lightning absolute inset-0" />
-        )}
+        {/* Lightning flash — only during thunderstorms, alongside the rain above. */}
+        {theme === "thunder" && <span className="lightning absolute inset-0" />}
       </div>
     </div>
   );
