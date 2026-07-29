@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Star, PlayCircle, MapPin, CloudRain } from "lucide-react";
-import { WeatherIcon } from "../weather-icon";
+import { ClimateCarousel } from "../climate-carousel";
 import { Reveal } from "../motion-primitives";
 import { useT } from "../language-provider";
 
@@ -98,56 +98,22 @@ export function Hero() {
           </motion.div>
         </div>
 
-        {/* Animated preview mockup */}
+        {/* Climate photo carousel */}
         <div className="relative mx-auto h-[420px] w-full max-w-md">
-          {/* real photo accent */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, rotate: 7 }}
-            animate={{ opacity: 1, scale: 1, rotate: 4 }}
-            transition={{ duration: 0.8, delay: 0.55 }}
-            className="absolute -bottom-10 -right-6 z-0 hidden h-44 w-60 overflow-hidden rounded-3xl border border-white/50 shadow-card sm:block"
-          >
-            <img
-              src="/images/sunrise.jpg"
-              alt="Sunrise over Lake Tahoe"
-              className="img-tinted h-full w-full object-cover"
-            />
-            <div className="img-tint" aria-hidden />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-xs font-medium text-white">
-              Sunrise · Lake Tahoe
-            </div>
-          </motion.div>
-
-          {/* Climate-zones poster — purely illustrative, no fake live numbers */}
-          <motion.div
-            initial={{ opacity: 0, y: 40, rotate: -3 }}
+            initial={{ opacity: 0, y: 40, rotate: -2 }}
             animate={{ opacity: 1, y: 0, rotate: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="glass-strong absolute inset-0 z-10 flex flex-col justify-between rounded-[2rem] p-7 shadow-card"
+            className="absolute inset-0"
           >
-            <div>
-              <p className="font-display text-xl font-bold">{t("hero.posterTitle")}</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                {t("hero.posterSubtitle")}
-              </p>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              {[
-                { zone: t("hero.zoneDesert"), theme: "clear" as const },
-                { zone: t("hero.zoneTropical"), theme: "rain" as const },
-                { zone: t("hero.zoneTemperate"), theme: "partly" as const },
-                { zone: t("hero.zoneArctic"), theme: "snow" as const },
-              ].map((z) => (
-                <div
-                  key={z.zone}
-                  className="flex flex-col items-center gap-2 rounded-2xl bg-white/60 p-4 text-center dark:bg-white/5"
-                >
-                  <WeatherIcon theme={z.theme} size={40} animated={false} />
-                  <span className="text-sm font-semibold">{z.zone}</span>
-                </div>
-              ))}
-            </div>
+            <ClimateCarousel
+              slides={[
+                { src: "/images/hero-sky.jpg", alt: t("hero.zoneDesert"), caption: t("hero.zoneDesert") },
+                { src: "/images/storm.jpg", alt: t("hero.zoneTropical"), caption: t("hero.zoneTropical") },
+                { src: "/images/aerial-clouds.jpg", alt: t("hero.zoneTemperate"), caption: t("hero.zoneTemperate") },
+                { src: "/images/snow.jpg", alt: t("hero.zoneArctic"), caption: t("hero.zoneArctic") },
+              ]}
+            />
           </motion.div>
         </div>
       </div>
