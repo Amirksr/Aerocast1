@@ -98,23 +98,16 @@ export function Hero() {
           </motion.div>
         </div>
 
-        {/* Climate photo carousel */}
+        {/* Climate photo carousel — plain, no entrance/slide animation */}
         <div className="relative mx-auto h-[420px] w-full max-w-md">
-          <motion.div
-            initial={{ opacity: 0, y: 40, rotate: -2 }}
-            animate={{ opacity: 1, y: 0, rotate: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="absolute inset-0"
-          >
-            <ClimateCarousel
-              slides={[
-                { src: "/images/hero-sky.jpg", alt: t("hero.zoneDesert"), caption: t("hero.zoneDesert") },
-                { src: "/images/storm.jpg", alt: t("hero.zoneTropical"), caption: t("hero.zoneTropical") },
-                { src: "/images/aerial-clouds.jpg", alt: t("hero.zoneTemperate"), caption: t("hero.zoneTemperate") },
-                { src: "/images/snow.jpg", alt: t("hero.zoneArctic"), caption: t("hero.zoneArctic") },
-              ]}
-            />
-          </motion.div>
+          <ClimateCarousel
+            slides={[
+              { src: "/images/hero-sky.jpg", alt: t("hero.zoneDesert"), caption: t("hero.zoneDesert") },
+              { src: "/images/storm.jpg", alt: t("hero.zoneTropical"), caption: t("hero.zoneTropical") },
+              { src: "/images/aerial-clouds.jpg", alt: t("hero.zoneTemperate"), caption: t("hero.zoneTemperate") },
+              { src: "/images/snow.jpg", alt: t("hero.zoneArctic"), caption: t("hero.zoneArctic") },
+            ]}
+          />
         </div>
       </div>
     </section>

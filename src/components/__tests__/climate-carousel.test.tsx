@@ -48,4 +48,34 @@ describe("ClimateCarousel", () => {
     fireEvent.click(screen.getByLabelText("Go to slide 3"));
     expect(screen.getByText("Arctic")).toBeInTheDocument();
   });
+
+  it("advances to the next slide on a left drag/swipe past the threshold", () => {
+    const { container } = render(<ClimateCarousel slides={slides} />);
+    const surface = container.querySelector(".touch-pan-y") as HTMLElement;
+
+    fireEvent.mouseDown(surface, { clientX: 300 });
+    fireEvent.mouseUp(surface, { clientX: 200 }); // 100px left swipe
+
+    expect(screen.getByText("Tropical")).toBeInTheDocument();
+  });
+
+  it("does not change slides on a drag that doesn't cross the threshold", () => {
+    const { container } = render(<ClimateCarousel slides={slides} />);
+    const surface = container.querySelector(".touch-pan-y") as HTMLElement;
+
+    fireEvent.mouseDown(surface, { clientX: 300 });
+    fireEvent.mouseUp(surface, { clientX: 285 }); // only 15px, below threshold
+
+    expect(screen.getByText("Desert")).toBeInTheDocument();
+  });
+
+  it("supports touch swipe the same way as mouse drag", () => {
+    const { container } = render(<ClimateCarousel slides={slides} />);
+    const surface = container.querySelector(".touch-pan-y") as HTMLElement;
+
+    fireEvent.touchStart(surface, { touches: [{ clientX: 300 }] });
+    fireEvent.touchEnd(surface, { changedTouches: [{ clientX: 220 }] });
+
+    expect(screen.getByText("Tropical")).toBeInTheDocument();
+  });
 });

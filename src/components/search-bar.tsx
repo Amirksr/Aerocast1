@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, LocateFixed, Loader2, X } from "lucide-react";
 import type { GeoPlace } from "@/lib/weather";
-import { useT } from "./language-provider";
+import { useT, useLang } from "./language-provider";
 
 interface SearchBarProps {
   onSelect: (place: GeoPlace) => void;
@@ -20,6 +20,7 @@ export function SearchBar({
   autoFocus,
 }: SearchBarProps) {
   const t = useT();
+  const lang = useLang();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<GeoPlace[]>([]);
   const [open, setOpen] = useState(false);
@@ -27,6 +28,10 @@ export function SearchBar({
   const [locating, setLocating] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const debounce = useRef<ReturnType<typeof setTimeout>>();
+  // Set right before we programmatically change `query` after a selection,
+  // so the query-change effect below doesn't immediately re-run a search
+  // and pop the dropdown back open.
+  const skipNextSearchRef = useRef(false);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -45,7 +50,9 @@ export function SearchBar({
     }
     setFetching(true);
     try {
-      const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+      const res = await fetch(
+        `/api/geocode?q=${encodeURIComponent(q)}&lang=${lang}`
+      );
       const data = await res.json();
       setResults(data.results ?? []);
       setOpen(true);
@@ -54,15 +61,20 @@ export function SearchBar({
     } finally {
       setFetching(false);
     }
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
+    if (skipNextSearchRef.current) {
+      skipNextSearchRef.current = false;
+      return;
+    }
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => runSearch(query), 280);
     return () => clearTimeout(debounce.current);
   }, [query, runSearch]);
 
   function select(place: GeoPlace) {
+    skipNextSearchRef.current = true;
     setQuery(`${place.name}${place.admin1 ? `, ${place.admin1}` : ""}`);
     setResults([]);
     setOpen(false);
@@ -80,7 +92,7 @@ export function SearchBar({
         const { latitude, longitude } = pos.coords;
         try {
           const res = await fetch(
-            `/api/geocode?q=${latitude.toFixed(2)},${longitude.toFixed(2)}`
+            `/api/geocode?q=${latitude.toFixed(2)},${longitude.toFixed(2)}&lang=${lang}`
           );
           const data = await res.json();
           const place =

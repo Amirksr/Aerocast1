@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence, type PanInfo } from "framer-motion";
+import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface CarouselSlide {
@@ -14,59 +13,51 @@ interface ClimateCarouselProps {
   slides: CarouselSlide[];
 }
 
-const SWIPE_THRESHOLD = 60; // px of drag before we treat it as a swipe
+const SWIPE_THRESHOLD = 40; // px of drag before we treat it as a swipe
 
+// Deliberately plain: no fade/slide/transition animation. Navigating (via
+// arrows, dots, touch swipe, or mouse drag) just swaps the visible image
+// immediately.
 export function ClimateCarousel({ slides }: ClimateCarouselProps) {
   const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
+  const startX = useRef<number | null>(null);
 
-  const go = (next: number) => {
-    const clamped = (next + slides.length) % slides.length;
-    setDirection(next > index ? 1 : -1);
-    setIndex(clamped);
-  };
+  const go = (next: number) => setIndex((next + slides.length) % slides.length);
 
-  const handleDragEnd = (
-    _: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    if (info.offset.x < -SWIPE_THRESHOLD) {
-      go(index + 1);
-    } else if (info.offset.x > SWIPE_THRESHOLD) {
-      go(index - 1);
-    }
-  };
+  function handleStart(clientX: number) {
+    startX.current = clientX;
+  }
+
+  function handleEnd(clientX: number) {
+    if (startX.current === null) return;
+    const delta = clientX - startX.current;
+    startX.current = null;
+    if (delta < -SWIPE_THRESHOLD) go(index + 1);
+    else if (delta > SWIPE_THRESHOLD) go(index - 1);
+  }
 
   const slide = slides[index];
 
   return (
     <div className="relative h-full w-full select-none overflow-hidden rounded-[2rem] shadow-card">
-      <AnimatePresence initial={false} custom={direction} mode="popLayout">
-        <motion.div
-          key={index}
-          custom={direction}
-          initial={{ opacity: 0, x: direction >= 0 ? 60 : -60 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: direction >= 0 ? -60 : 60 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.6}
-          onDragEnd={handleDragEnd}
-          className="absolute inset-0 cursor-grab active:cursor-grabbing"
-        >
-          <img
-            src={slide.src}
-            alt={slide.alt}
-            draggable={false}
-            className="img-tinted h-full w-full object-cover"
-          />
-          <div className="img-tint" aria-hidden />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 pt-14">
-            <p className="text-lg font-semibold text-white">{slide.caption}</p>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+      <div
+        onMouseDown={(e) => handleStart(e.clientX)}
+        onMouseUp={(e) => handleEnd(e.clientX)}
+        onMouseLeave={() => (startX.current = null)}
+        onTouchStart={(e) => handleStart(e.touches[0].clientX)}
+        onTouchEnd={(e) => handleEnd(e.changedTouches[0].clientX)}
+        className="absolute inset-0 cursor-grab touch-pan-y active:cursor-grabbing"
+      >
+        <img
+          src={slide.src}
+          alt={slide.alt}
+          draggable={false}
+          className="h-full w-full object-cover"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 pt-14">
+          <p className="text-lg font-semibold text-white">{slide.caption}</p>
+        </div>
+      </div>
 
       {/* Prev / next controls */}
       <button
@@ -94,9 +85,7 @@ export function ClimateCarousel({ slides }: ClimateCarouselProps) {
             type="button"
             onClick={() => go(i)}
             aria-label={`Go to slide ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all ${
-              i === index ? "w-5 bg-white" : "w-1.5 bg-white/50"
-            }`}
+            className={`h-1.5 rounded-full ${i === index ? "w-5 bg-white" : "w-1.5 bg-white/50"}`}
           />
         ))}
       </div>

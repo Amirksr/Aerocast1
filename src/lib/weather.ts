@@ -138,10 +138,14 @@ async function getJson(url: string) {
   return res.json();
 }
 
-export async function geocode(query: string, limit = 6): Promise<GeoPlace[]> {
+export async function geocode(
+  query: string,
+  limit = 6,
+  language = "en"
+): Promise<GeoPlace[]> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
     query
-  )}&count=${limit}&language=en&format=json`;
+  )}&count=${limit}&language=${encodeURIComponent(language)}&format=json`;
   const data = await getJson(url);
   const results: any[] = data.results ?? [];
   return results.map((r) => ({
