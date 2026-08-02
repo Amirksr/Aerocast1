@@ -1,4 +1,4 @@
-import { decodeWeather, geocode, getWeather, type GeoPlace } from "@/lib/weather";
+import { decodeWeather, geocode, getWeather, mergeWithEnglishNames, type GeoPlace } from "@/lib/weather";
 
 // We mock global fetch rather than hitting the real Open-Meteo API, so the
 // suite is fast, deterministic and works offline / in CI.
@@ -72,6 +72,49 @@ describe("geocode", () => {
   it("throws when the upstream API responds with an error status", async () => {
     mockFetchOnce({}, false, 500);
     await expect(geocode("Isfahan")).rejects.toThrow("Upstream request failed: 500");
+  });
+});
+
+describe("mergeWithEnglishNames", () => {
+  it("attaches the English name/admin1 when it differs from the localized one", () => {
+    const primary = [
+      { id: 112931, name: "اصفهان", latitude: 32.65, longitude: 51.67, admin1: "اصفهان" },
+    ];
+    const english = [
+      { id: 112931, name: "Isfahan", latitude: 32.65, longitude: 51.67, admin1: "Isfahan" },
+    ];
+    const merged = mergeWithEnglishNames(primary, english);
+    expect(merged[0].nameEn).toBe("Isfahan");
+    expect(merged[0].admin1En).toBe("Isfahan");
+    expect(merged[0].name).toBe("اصفهان"); // primary name untouched
+  });
+
+  it("does not attach nameEn when the localized name is already identical to English", () => {
+    const primary = [{ id: 1, name: "Berlin", latitude: 52.5, longitude: 13.4 }];
+    const english = [{ id: 1, name: "Berlin", latitude: 52.5, longitude: 13.4 }];
+    const merged = mergeWithEnglishNames(primary, english);
+    expect(merged[0].nameEn).toBeUndefined();
+  });
+
+  it("leaves a place untouched if no matching id exists in the English list", () => {
+    const primary = [{ id: 999, name: "جایی", latitude: 1, longitude: 1 }];
+    const merged = mergeWithEnglishNames(primary, []);
+    expect(merged[0].nameEn).toBeUndefined();
+    expect(merged[0].name).toBe("جایی");
+  });
+
+  it("matches results by id, not by array position", () => {
+    const primary = [
+      { id: 2, name: "دوم", latitude: 2, longitude: 2 },
+      { id: 1, name: "اول", latitude: 1, longitude: 1 },
+    ];
+    const english = [
+      { id: 1, name: "First", latitude: 1, longitude: 1 },
+      { id: 2, name: "Second", latitude: 2, longitude: 2 },
+    ];
+    const merged = mergeWithEnglishNames(primary, english);
+    expect(merged.find((p) => p.id === 1)?.nameEn).toBe("First");
+    expect(merged.find((p) => p.id === 2)?.nameEn).toBe("Second");
   });
 });
 

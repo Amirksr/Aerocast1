@@ -75,7 +75,8 @@ export function SearchBar({
 
   function select(place: GeoPlace) {
     skipNextSearchRef.current = true;
-    setQuery(`${place.name}${place.admin1 ? `, ${place.admin1}` : ""}`);
+    const label = place.nameEn ? `${place.name} (${place.nameEn})` : place.name;
+    setQuery(`${label}${place.admin1 ? `, ${place.admin1}` : ""}`);
     setResults([]);
     setOpen(false);
     onSelect(place);
@@ -183,7 +184,12 @@ export function SearchBar({
                   <MapPin size={16} />
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate font-medium">{place.name}</span>
+                  <span className="block truncate font-medium">
+                    {place.name}
+                    {place.nameEn && (
+                      <span className="font-normal text-slate-400"> · {place.nameEn}</span>
+                    )}
+                  </span>
                   <span className="block truncate text-xs text-slate-400">
                     {[place.admin1, place.country].filter(Boolean).join(", ")}
                   </span>

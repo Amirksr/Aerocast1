@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geocode } from "@/lib/weather";
+import { geocode, mergeWithEnglishNames } from "@/lib/weather";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +15,22 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const results = await geocode(q, 6, lang);
+    if (lang === "en") {
+      const results = await geocode(q, 6, "en");
+      return NextResponse.json(
+        { results },
+        { headers: { "Cache-Control": "public, s-maxage=86400" } }
+      );
+    }
+
+    // Non-English UI: fetch localized + English in parallel and merge, so
+    // the dropdown can show both (e.g. "اصفهان · Isfahan") instead of only
+    // the localized name, which was confusing on its own.
+    const [localized, english] = await Promise.all([
+      geocode(q, 6, lang),
+      geocode(q, 6, "en"),
+    ]);
+    const results = mergeWithEnglishNames(localized, english);
     return NextResponse.json(
       { results },
       { headers: { "Cache-Control": "public, s-maxage=86400" } }

@@ -65,6 +65,9 @@ export interface GeoPlace {
   admin1?: string;
   timezone?: string;
   population?: number;
+  /** English name/admin1, attached when the primary search language isn't English. */
+  nameEn?: string;
+  admin1En?: string;
 }
 
 export interface CurrentWeather {
@@ -143,12 +146,12 @@ export async function geocode(
   limit = 6,
   language = "en"
 ): Promise<GeoPlace[]> {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-    query
-  )}&count=${limit}&language=${encodeURIComponent(language)}&format=json`;
-  const data = await getJson(url);
-  const results: any[] = data.results ?? [];
-  return results.map((r) => ({
+  const buildUrl = (lang: string) =>
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+      query
+    )}&count=${limit}&language=${encodeURIComponent(lang)}&format=json`;
+
+  const mapOne = (r: any): GeoPlace => ({
     id: r.id,
     name: r.name,
     latitude: r.latitude,
@@ -158,7 +161,57 @@ export async function geocode(
     admin1: r.admin1,
     timezone: r.timezone,
     population: r.population,
-  }));
+  });
+
+  if (language === "en") {
+    const data = await getJson(buildUrl("en"));
+    const results: any[] = data.results ?? [];
+    return results.map(mapOne);
+  }
+
+  // Non-English UI language: fetch localized names AND English names in
+  // parallel, then merge by Open-Meteo's stable `id` field. Without this,
+  // a Persian search only ever returns Persian names — with no English
+  // name attached anywhere, favorites/history saved while in Persian mode
+  // look wrong/foreign once the UI is switched back to English, and it's
+  // impossible to tell which real-world (English-named) city was picked.
+  const [localizedData, englishData] = await Promise.all([
+    getJson(buildUrl(language)),
+    getJson(buildUrl("en")),
+  ]);
+
+  const englishById = new Map<number, { name: string; admin1?: string }>(
+    (englishData.results ?? []).map((r: any) => [r.id, { name: r.name, admin1: r.admin1 }])
+  );
+
+  const localizedResults: any[] = localizedData.results ?? [];
+  return localizedResults.map((r) => {
+    const en = englishById.get(r.id);
+    return {
+      ...mapOne(r),
+      nameEn: en?.name && en.name !== r.name ? en.name : undefined,
+      admin1En: en?.admin1 && en.admin1 !== r.admin1 ? en.admin1 : undefined,
+    };
+  });
+}
+
+/**
+ * Attaches the English name/admin1 to each place in `primary` by matching
+ * on `id` against `english`. Used so that, say, a Persian-language search
+ * can show "اصفهان · Isfahan" instead of only the localized name — showing
+ * only one language was confusing when the two spellings differ a lot.
+ * Pure function (no I/O) so it's easy to unit test on its own.
+ */
+export function mergeWithEnglishNames(
+  primary: GeoPlace[],
+  english: GeoPlace[]
+): GeoPlace[] {
+  const byId = new Map(english.map((e) => [e.id, e]));
+  return primary.map((p) => {
+    const en = byId.get(p.id);
+    if (!en || en.name === p.name) return p;
+    return { ...p, nameEn: en.name, admin1En: en.admin1 };
+  });
 }
 
 export async function reverseGeocode(
