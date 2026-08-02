@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { ClimateCarousel, type CarouselSlide } from "@/components/climate-carousel";
 
 const slides: CarouselSlide[] = [
@@ -76,6 +76,71 @@ describe("ClimateCarousel", () => {
     fireEvent.touchStart(surface, { touches: [{ clientX: 300 }] });
     fireEvent.touchEnd(surface, { changedTouches: [{ clientX: 220 }] });
 
+    expect(screen.getByText("Tropical")).toBeInTheDocument();
+  });
+});
+
+describe("ClimateCarousel autoplay", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("automatically advances to the next slide after the autoplay interval", () => {
+    render(<ClimateCarousel slides={slides} autoplayMs={5000} />);
+    expect(screen.getByText("Desert")).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    expect(screen.getByText("Tropical")).toBeInTheDocument();
+  });
+
+  it("does not autoplay when autoplayMs is 0", () => {
+    render(<ClimateCarousel slides={slides} autoplayMs={0} />);
+
+    act(() => {
+      jest.advanceTimersByTime(20000);
+    });
+
+    expect(screen.getByText("Desert")).toBeInTheDocument();
+  });
+
+  it("pauses autoplay while the mouse is hovering the carousel", () => {
+    const { container } = render(<ClimateCarousel slides={slides} autoplayMs={5000} />);
+    const root = container.firstElementChild as HTMLElement;
+
+    fireEvent.mouseEnter(root);
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+    expect(screen.getByText("Desert")).toBeInTheDocument(); // still paused
+
+    fireEvent.mouseLeave(root);
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(screen.getByText("Tropical")).toBeInTheDocument(); // resumed
+  });
+
+  it("pauses autoplay while the user is dragging", () => {
+    const { container } = render(<ClimateCarousel slides={slides} autoplayMs={5000} />);
+    const surface = container.querySelector(".touch-pan-y") as HTMLElement;
+
+    fireEvent.mouseDown(surface, { clientX: 300 }); // starts drag -> pauses
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+    expect(screen.getByText("Desert")).toBeInTheDocument(); // still paused mid-drag
+
+    fireEvent.mouseUp(surface, { clientX: 295 }); // ends drag (no swipe), resumes
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
     expect(screen.getByText("Tropical")).toBeInTheDocument();
   });
 });

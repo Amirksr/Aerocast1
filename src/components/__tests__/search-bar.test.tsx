@@ -51,10 +51,7 @@ describe("SearchBar", () => {
     });
 
     // Let the debounce timer + fetch resolve so results appear.
-    await act(async () => {
-      jest.advanceTimersByTime(300);
-      await Promise.resolve();
-    });
+    await act(() => jest.advanceTimersByTimeAsync(300));
 
     const option = await screen.findByText("Isfahan");
     fireEvent.click(option);
@@ -64,10 +61,7 @@ describe("SearchBar", () => {
     // Selecting rewrites the input value, which would normally re-trigger
     // the debounced search. Advance past that debounce window and make
     // sure the dropdown does NOT reappear.
-    await act(async () => {
-      jest.advanceTimersByTime(300);
-      await Promise.resolve();
-    });
+    await act(() => jest.advanceTimersByTimeAsync(300));
 
     expect(screen.queryByText("Isfahan")).not.toBeInTheDocument();
   });
@@ -80,13 +74,25 @@ describe("SearchBar", () => {
       target: { value: "Isf" },
     });
 
-    await act(async () => {
-      jest.advanceTimersByTime(300);
-      await Promise.resolve();
-    });
+    await act(() => jest.advanceTimersByTimeAsync(300));
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
     const calledUrl = (global.fetch as jest.Mock).mock.calls[0][0] as string;
     expect(calledUrl).toContain("lang=fa"); // app's default language is Persian
+  });
+
+  it("shows the English name alongside the localized name when both are present", async () => {
+    const isfahanFa = { ...isfahan, name: "اصفهان", nameEn: "Isfahan" };
+    mockGeocodeResponse([isfahanFa]);
+    renderSearchBar();
+
+    fireEvent.change(screen.getByLabelText("Search location"), {
+      target: { value: "Isf" },
+    });
+
+    await act(() => jest.advanceTimersByTimeAsync(300));
+
+    expect(await screen.findByText("اصفهان")).toBeInTheDocument();
+    expect(screen.getByText("· Isfahan")).toBeInTheDocument();
   });
 });
