@@ -26,6 +26,8 @@ export function FavoritesManager() {
   const [active, setActive] = useState<WeatherResult | null>(null);
   const [activeId, setActiveId] = useState<string | number | null>(null);
   const [busyId, setBusyId] = useState<string | number | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const t = useT();
 
   const loadFavorites = useCallback(async () => {
@@ -33,11 +35,20 @@ export function FavoritesManager() {
     try {
       const res = await fetch("/api/favorites");
       const data = await res.json();
+      if (!res.ok) {
+        setLoadError(data?.error || t("favorites.loadError"));
+        setFavorites([]);
+        return;
+      }
+      setLoadError(null);
       setFavorites(data.favorites ?? []);
+    } catch {
+      setLoadError(t("favorites.loadError"));
+      setFavorites([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadFavorites();
@@ -64,6 +75,7 @@ export function FavoritesManager() {
 
   async function addFavorite(place: GeoPlace) {
     setAdding(true);
+    setAddError(null);
     try {
       const res = await fetch("/api/favorites", {
         method: "POST",
@@ -78,11 +90,15 @@ export function FavoritesManager() {
           longitude: place.longitude,
         }),
       });
-      if (res.ok) {
-        await loadFavorites();
-        const created = await res.json();
-        if (created?.favorite) loadWeather(created.favorite);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setAddError(data?.error || t("favorites.addError"));
+        return;
       }
+      await loadFavorites();
+      if (data?.favorite) loadWeather(data.favorite);
+    } catch {
+      setAddError(t("favorites.addError"));
     } finally {
       setAdding(false);
     }
@@ -129,11 +145,16 @@ export function FavoritesManager() {
         )}
       </AnimatePresence>
 
-      <div className="card p-6">
+      <div className="card relative z-10 p-6">
         <div className="mb-4 flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
           <Plus size={16} className="text-brand-500" /> {t("favorites.addTitle")}
         </div>
         <SearchBar onSelect={addFavorite} loading={adding} />
+        {addError && (
+          <p className="mt-3 text-sm text-rose-500" role="alert">
+            {addError}
+          </p>
+        )}
       </div>
 
       <div>
@@ -146,6 +167,12 @@ export function FavoritesManager() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="skeleton h-32 rounded-3xl" />
             ))}
+          </div>
+        ) : loadError ? (
+          <div className="card flex flex-col items-center gap-3 py-16 text-center">
+            <p className="font-semibold text-rose-500" role="alert">
+              {loadError}
+            </p>
           </div>
         ) : favorites.length === 0 ? (
           <div className="card flex flex-col items-center gap-3 py-16 text-center">

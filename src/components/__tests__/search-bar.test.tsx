@@ -62,6 +62,7 @@ describe("SearchBar", () => {
     // the debounced search. Advance past that debounce window and make
     // sure the dropdown does NOT reappear.
     await act(() => jest.advanceTimersByTimeAsync(300));
+    await act(() => jest.advanceTimersByTimeAsync(0)); // flush any trailing microtasks
 
     expect(screen.queryByText("Isfahan")).not.toBeInTheDocument();
   });
@@ -94,5 +95,65 @@ describe("SearchBar", () => {
 
     expect(await screen.findByText("اصفهان")).toBeInTheDocument();
     expect(screen.getByText("· Isfahan")).toBeInTheDocument();
+  });
+
+  it("Forecast button performs an immediate lookup when clicked before the debounced results arrive", async () => {
+    mockGeocodeResponse([isfahan]);
+    const onSelect = renderSearchBar();
+
+    // Type, but click Forecast right away instead of waiting for the
+    // 280ms debounce — `results` is still empty at this point.
+    fireEvent.change(screen.getByLabelText("Search location"), {
+      target: { value: "Isf" },
+    });
+    fireEvent.click(screen.getByText("پیش‌بینی")); // "Forecast" (default UI language is Persian)
+
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith(isfahan));
+  });
+
+  it("Forecast button does nothing for a too-short query", async () => {
+    const onSelect = renderSearchBar();
+    fireEvent.change(screen.getByLabelText("Search location"), {
+      target: { value: "I" },
+    });
+    fireEvent.click(screen.getByText("پیش‌بینی"));
+
+    await act(() => jest.advanceTimersByTimeAsync(0));
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("shows an error message when geolocation is denied instead of failing silently", async () => {
+    const denyError = { code: 1, message: "User denied Geolocation" };
+    (navigator as any).geolocation = {
+      getCurrentPosition: (_success: any, error: any) => error(denyError),
+    };
+
+    renderSearchBar();
+    fireEvent.click(screen.getByLabelText("از موقعیت من استفاده کن")); // "Use my location"
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "موقعیت مکانی شما گرفته نشد"
+    );
+  });
+
+  it("clears a previous location error on a new attempt", async () => {
+    let attempt = 0;
+    (navigator as any).geolocation = {
+      getCurrentPosition: (success: any, error: any) => {
+        attempt += 1;
+        if (attempt === 1) error({ code: 1, message: "denied" });
+        else success({ coords: { latitude: 1, longitude: 2 } });
+      },
+    };
+    mockGeocodeResponse([isfahan]);
+    renderSearchBar();
+
+    const locationBtn = screen.getByLabelText("از موقعیت من استفاده کن");
+    fireEvent.click(locationBtn);
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+
+    fireEvent.click(locationBtn);
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
   });
 });

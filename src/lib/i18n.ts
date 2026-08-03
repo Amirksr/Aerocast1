@@ -57,6 +57,7 @@ export const dictionaries: Record<Lang, Record<string, any>> = {
       useLocation: "Use my location",
       forecast: "Forecast",
       clear: "Clear",
+      locationError: "Couldn't get your location. Check your browser's location permission.",
     },
     dashboard: {
       feelsLike: "Feels like",
@@ -301,6 +302,8 @@ export const dictionaries: Record<Lang, Record<string, any>> = {
       noFavDesc:
         "Search for a city above and it will appear here. Your saved places are stored securely in our MongoDB-backed service.",
       view: "View detailed forecast",
+      addError: "Couldn't add this location. Please try again.",
+      loadError: "Couldn't load your saved locations. Please refresh.",
     },
     contact: {
       title: "Let's talk weather",
@@ -537,6 +540,7 @@ export const dictionaries: Record<Lang, Record<string, any>> = {
       useLocation: "از موقعیت من استفاده کن",
       forecast: "پیش‌بینی",
       clear: "پاک کردن",
+      locationError: "موقعیت مکانی شما گرفته نشد. دسترسی موقعیت مکانی مرورگر را بررسی کن.",
     },
     dashboard: {
       feelsLike: "حس می‌شود",
@@ -781,6 +785,8 @@ export const dictionaries: Record<Lang, Record<string, any>> = {
       noFavDesc:
         "بالا یک شهر را جستجو کن تا اینجا ظاهر شود. مکان‌های ذخیره‌شدهٔ تو به‌صورت امن در سرویس مبتنی‌بر MongoDB ما نگهداری می‌شوند.",
       view: "مشاهده پیش‌بینی دقیق",
+      addError: "این مکان اضافه نشد. لطفاً دوباره امتحان کن.",
+      loadError: "مکان‌های ذخیره‌شده لود نشدند. صفحه را تازه کن.",
     },
     contact: {
       title: "بیا درباره هوا حرف بزنیم",

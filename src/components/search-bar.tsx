@@ -26,6 +26,7 @@ export function SearchBar({
   const [open, setOpen] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const debounce = useRef<ReturnType<typeof setTimeout>>();
   // Set right before we programmatically change `query` after a selection,
@@ -84,8 +85,10 @@ export function SearchBar({
 
   function useMyLocation() {
     setLocating(true);
+    setLocError(null);
     if (!navigator.geolocation) {
       setLocating(false);
+      setLocError(t("search.locationError"));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -106,18 +109,50 @@ export function SearchBar({
             } as GeoPlace);
           select(place);
         } catch {
-          /* ignore */
+          setLocError(t("search.locationError"));
         } finally {
           setLocating(false);
         }
       },
-      () => setLocating(false),
+      () => {
+        setLocating(false);
+        setLocError(t("search.locationError"));
+      },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   }
 
+  // The "Forecast" button should work even if the debounced dropdown search
+  // hasn't resolved yet (e.g. user types fast then immediately clicks it).
+  // Fall back to an immediate lookup instead of silently doing nothing when
+  // `results` is still empty.
+  async function handleForecastClick() {
+    if (results[0]) {
+      select(results[0]);
+      return;
+    }
+    const q = query.trim();
+    if (q.length < 2) return;
+    setFetching(true);
+    try {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}&lang=${lang}`);
+      const data = await res.json();
+      const first: GeoPlace | undefined = data.results?.[0];
+      if (first) {
+        select(first);
+      } else {
+        setResults([]);
+        setOpen(true); // shows the "no matches" message
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setFetching(false);
+    }
+  }
+
   return (
-    <div ref={wrapRef} className="relative w-full">
+    <div ref={wrapRef} className="relative z-20 w-full">
       <div className="glass-strong flex items-center gap-2 rounded-full p-2 shadow-card">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600 dark:bg-white/10 dark:text-brand-300">
           <Search size={20} />
@@ -151,7 +186,7 @@ export function SearchBar({
           {locating ? <Loader2 size={18} className="animate-spin" /> : <LocateFixed size={18} />}
         </button>
         <button
-          onClick={() => results[0] && select(results[0])}
+          onClick={handleForecastClick}
           disabled={loading || (!query && !open)}
             className="btn-primary h-11 px-5"
           >
@@ -160,6 +195,12 @@ export function SearchBar({
           </button>
       </div>
 
+      {locError && (
+        <p className="mt-2 px-2 text-xs text-rose-500" role="alert">
+          {locError}
+        </p>
+      )}
+
       <AnimatePresence>
         {open && (results.length > 0 || fetching) && (
           <motion.div
@@ -167,7 +208,7 @@ export function SearchBar({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="glass-strong absolute z-30 mt-2 w-full overflow-hidden rounded-3xl p-2 shadow-card"
+            className="glass-strong absolute z-50 mt-2 w-full overflow-hidden rounded-3xl p-2 shadow-card"
           >
             {fetching && (
               <div className="flex items-center gap-2 px-4 py-3 text-sm text-slate-400">
